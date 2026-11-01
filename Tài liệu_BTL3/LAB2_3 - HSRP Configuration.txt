@@ -1,0 +1,104 @@
+!Cấu hình cho ALS switch
+en
+conf t
+hostname ALS
+vlan 100
+	name VLAN100
+	exit
+interface range fa0/1 - 10
+	switchport access vlan 100
+	switchport mode access
+int g0/1
+	switchport mode trunk
+int g0/2
+	switchport mode trunk
+
+!Cấu hình cho router CoreRT1
+en
+conf t
+hostname CoreRT1
+int g0/0
+	ip add 172.16.10.2 255.255.255.0
+	no shut
+int g0/1
+	no shutdown
+int g0/1.100
+	description VLAN 100
+	encapsulation dot1q 100
+	ip add 192.168.100.1 255.255.255.0
+	standby 1 ip 192.168.100.100 
+	! đây là Virtual IP cho group 1, các trạm dùng địa chỉ này làm Default Gateway
+	standby 1 priority 105 ! mặc định là 100; cao hơn nên làm active
+	standby 1 track g0/0 
+	! khi cổng này down thì priority của router bị giảm xuống 10 (mặc định)
+	standby 1 preempt
+	! cho phép router này trở thành active router khi nó có priority cao hơn các router cấu hình HSRP khác trong nhóm standby
+router ospf 1
+	network 172.16.10.0 0.0.0.255 area 0
+	network 192.168.100.0 0.0.0.255 area 0
+
+!Cấu hình cho router CoreRT1 (đã bỏ comment)
+en
+conf t
+hostname CoreRT1
+int g0/0
+	ip add 172.16.10.2 255.255.255.0
+	no shut
+int g0/1
+	no shutdown
+int g0/1.100
+	description VLAN 100
+	encapsulation dot1q 100
+	ip add 192.168.100.1 255.255.255.0
+	standby 1 ip 192.168.100.100 
+	standby 1 priority 105 
+	standby 1 track g0/0 
+	standby 1 preempt
+router ospf 1
+	network 172.16.10.0 0.0.0.255 area 0
+	network 192.168.100.0 0.0.0.255 area 0
+
+!Cấu hình cho router CoreRT2
+en
+conf t
+hostname CoreRT2
+int g0/1
+	ip add 172.16.20.2 255.255.255.0
+	no shut
+int g0/2
+	no shut
+int g0/2.100
+	description VLAN 100
+	encapsulation dot1q 100
+	ip add 192.168.100.2 255.255.255.0
+	standby 1 ip 192.168.100.100
+	standby 1 priority 100
+	standby 1 track g0/1
+	standby 1 preempt
+router ospf 1
+	network 172.16.20.0 0.0.0.255 area 0
+	network 192.168.100.0 0.0.0.255 area 0
+
+! Cấu hình cho router ToISP
+en
+conf t
+hostname ToISP
+int g0/0
+	ip add 172.16.10.1 255.255.255.0
+	no shut
+int g0/1
+	ip add 172.16.20.1 255.255.255.0
+	no shut
+int g0/2
+	ip add 10.10.10.1 255.255.255.0
+	no shut
+router ospf 1
+	network 172.16.10.0 0.0.0.255 area 0
+	network 172.16.20.0 0.0.0.255 area 0
+	network 10.10.10.0 0.0.0.255 area 0
+
+
+
+
+
+	
